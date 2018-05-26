@@ -1,53 +1,69 @@
-version: '3'
+version: '2.3'
 
 services:
   db:
     container_name: ejemplo_container_db
     image: mariadb
-    volumes:
-      - ./.docker/mysqlconf:/etc/mysql/conf.d
-      - db_data:/var/lib/mysql
-    ports:
-      - "8106:3306"
+    env_file: ./.env
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: project_db
-      MYSQL_USER: project_user
-      MYSQL_PASSWORD: root
+      MYSQL_RANDOM_ROOT_PASSWORD: 'true'
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_USER: ${DATABASE_USER}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - mysqldata:/var/lib/mysql
+    ports:
+      - '${DATABASE_PORT}:3306'
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
 
   php:
     container_name: ejemplo_container_php
-    depends_on:
-      - db
-      - mailhog
     image: php:7.1
+    env_file: ./.env
     build:
       context: ./.docker
       dockerfile: Dockerfile
-    links:
-      - db
-      - mailhog
-    volumes:
-      - .:/var/www/html
-      - ./.docker/php.ini:/usr/local/etc/php/conf.d/php.ini
-      - ./.docker/virtualhost-php.conf:/etc/apache2/sites-available/001-virtualhost-php.conf
-      - ./logs/error.log:/var/www/error.log
-      - ./logs/access.log:/var/www/access.log
-    ports:
-      - "8180:80"
-      - "8143:443"
     environment:
-      DB_HOST: db:3306
-      DB_USER: root
-      DB_PASSWORD: root
+      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
+      TZ: America/Mexico_City
+      DB_HOST: ${DATABASE_HOST}
+      DB_USER: ${DATABASE_USER}
+      DB_PASSWORD: ${DATABASE_PASSWORD}
+      DB_NAME: ${DATABASE_NAME}
+      DB_DRIVER: mysql
+    volumes:
+      - .:${SERVER_ROOT}:cached
+    depends_on:
+      db:
+        condition: service_healthy
+    labels:
+      - 'traefik.backend=php'
+      - 'traefik.port=80'
+      - 'traefik.frontend.rule=Host:${HOST_NAME}'
 
 ################ Extra toolkit images.
   mailhog:
     container_name: ejemplo_container_mailhog
     image: mailhog/mailhog
+    env_file: ./.env
+    labels:
+      - 'traefik.backend=mailhog'
+      - 'traefik.port=8025'
+      - 'traefik.frontend.rule=Host:mailhog.${HOST_NAME}'
+
+  traefik:
+    container_name: ejemplo_container_traefik
+    image: traefik
+    env_file: ./.env
+    command: -c /dev/null --web --docker --logLevel=INFO
     ports:
-      - 8125:8025
-      - 8126:1025
+      - '${HOST_PORT}:80'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
-  db_data:
+  mysqldata:
+    driver: "local"
