@@ -21,7 +21,7 @@ services:
 
   php:
     container_name: ejemplo_container_php
-    image: php:7.1
+    image: php:7.1-apache
     env_file: ./.env
     build:
       context: ./.docker
@@ -35,7 +35,7 @@ services:
       DB_NAME: ${DATABASE_NAME}
       DB_DRIVER: mysql
     volumes:
-      - .:${SERVER_ROOT}:cached
+      - ./public:${SERVER_ROOT}:cached
     depends_on:
       db:
         condition: service_healthy

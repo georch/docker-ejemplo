@@ -25,7 +25,7 @@ Para apagar los contenedores ejecuta:
 
 `docker-compose stop`
 
-Para entrar a bash dentro del contenedor de Apache, usa el siguiente comando:
+Para entrar a bash dentro del contenedor de PHP, usa el siguiente comando:
 
 `docker exec -it ejemplo_container_php bash`
 
@@ -33,7 +33,7 @@ Para ver el log de tu aplicación, usa el siguiente comando:
 
 `docker logs -f ejemplo_container_php`
 
-El contenido de la carpeta del repositorio estará reflejado a la carpeta `/var/www/html` del container de Apache y el dominio mostrará el contenido de la ruta `/var/www/html/public`.
+El contenido de la carpeta `public` del repositorio estará reflejado a la carpeta `/var/www/html` del contenedor de PHP y el dominio mostrará el contenido de dicho directorio.
 
 Una vez funcionando, los siguientes servicios estarán disponibles:
 
